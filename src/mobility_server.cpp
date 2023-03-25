@@ -84,8 +84,8 @@ void update_motor(MotorState &state, double dt) {
         duty_cycle = -MAX_DUTY_CYCLE;
     }
 
-    printf("Motor %d: old=%d new=%d delta=%d dt=%.3f rate=%.1f duty=%.3f\n",
-           state.motor, state.ticks, ticks, delta_ticks, dt, rate, duty_cycle);
+    printf("Motor %d: target=%d old=%d new=%d delta=%d dt=%.3f rate=%.1f duty=%.3f\n",
+           state.motor, state.target, state.ticks, ticks, delta_ticks, dt, rate, duty_cycle);
 
     state.duty_cycle = duty_cycle;
     state.ticks = ticks;
@@ -186,13 +186,17 @@ int main(int argc, char **argv) {
     sprintf(cmd_endpoint, "tcp://*:%d", cmd_port);
     zsock_t *cmd_sock = zsock_new(ZMQ_SUB);
     zsock_bind(cmd_sock, cmd_endpoint);
+    zsock_set_subscribe(cmd_sock, "");
+    printf("Bound command socket to %s\n", cmd_endpoint);
 
     char status_endpoint[] = "tcp://*:99999";
     sprintf(status_endpoint, "tcp://*:%d", status_port);
     zsock_t *status_sock = zsock_new_pub(status_endpoint);
+    printf("Bound status socket to %s\n", status_endpoint);
 
-    double kp = get_double_config(root, "/parameters/kp");
-    double min_duty = get_double_config(root, "/parameters/min_duty_cycle");
+    kp = get_double_config(root, "/parameters/kp");
+    min_duty_cycle = get_double_config(root, "/parameters/min_duty_cycle");
+    max_acceleration = get_double_config(root, "/parameters/max_acceleration");
     int loop_sleep = get_int_config(root, "/parameters/update_interval_us");
 
     double last_time = get_time();
@@ -242,6 +246,11 @@ int main(int argc, char **argv) {
         rc_motor_set(right.motor, right.duty_cycle);
 
         last_time = now;
+
+        zframe_t *frame = zframe_new(&res, sizeof(res));
+        zmsg_t *pub_msg = zmsg_new();
+        zmsg_prepend(pub_msg, &frame);
+        zmsg_send(&pub_msg, status_sock);
     }
 
     rc_adc_cleanup();
