@@ -11,7 +11,8 @@ PGMS = \
         bin/echo_server \
 	bin/get_system_params \
 	bin/test_pid \
-	bin/mobility_server
+	bin/mobility_server \
+	bin/test_config
 
 bin/%: src/%.c
 	cc ${CFLAGS} -o $@ $< ${LDFLAGS} 
