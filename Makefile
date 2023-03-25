@@ -10,7 +10,8 @@ PGMS = \
         bin/json_echo \
         bin/echo_server \
 	bin/get_system_params \
-	bin/test_pid
+	bin/test_pid \
+	bin/mobility_server
 
 bin/%: src/%.c
 	cc ${CFLAGS} -o $@ $< ${LDFLAGS} 

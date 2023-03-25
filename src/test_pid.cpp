@@ -7,7 +7,7 @@
 #include <robotcontrol.h>
 
 
-#define MIN_DUTY_CYCLE 0.7
+#define MIN_DUTY_CYCLE 0.07
 #define MAX_ACCELERATION 0.01
 
 
@@ -56,6 +56,13 @@ int main(int argc, char **argv) {
             delta_duty = -MAX_ACCELERATION;
         }
         duty_cycle += delta_duty;
+        if (desired == 0) {
+            duty_cycle = 0.0;
+        } else if (0 <= duty_cycle && duty_cycle < MIN_DUTY_CYCLE) {
+            duty_cycle = MIN_DUTY_CYCLE;
+        } else if (-MIN_DUTY_CYCLE < duty_cycle && duty_cycle <= 0) {
+            duty_cycle = -MIN_DUTY_CYCLE;
+        }
 
         printf("Motor %d: old=%d new=%d delta=%d dt=%.3f rate=%.1f duty=%.3f\n",
                motor, last_encoder_value, new_encoder_value, delta, dt,
