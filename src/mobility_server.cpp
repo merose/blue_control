@@ -8,6 +8,10 @@
 #include <robotcontrol.h>
 #include <czmq.h>
 
+#include "json.hpp"
+
+using json = nlohmann::json;
+
 
 double min_duty_cycle;
 double max_acceleration;
@@ -17,22 +21,6 @@ double kp;
 struct MobilityRequest {
     int left_target;
     int right_target;
-};
-
-struct MobilityResponse {
-    double dt;
-    int delta_left;
-    double rate_left;
-    double duty_left;
-    int delta_right;
-    double rate_right;
-    double duty_right;
-    double battery_voltage;
-    double jack_voltage;
-    int left_front_detector;
-    int right_front_detector;
-    int left_rear_detector;
-    int right_rear_detector;
 };
 
 struct MotorState {
@@ -227,30 +215,28 @@ int main(int argc, char **argv) {
         update_motor(left, dt);
         update_motor(right, dt);
 
-        MobilityResponse res;
-        res.dt = dt;
-        res.delta_left = left.scale * left.delta_ticks;
-        res.rate_left = left.scale * left.rate;
-        res.duty_left = left.scale * left.duty_cycle;
-        res.delta_right = right.scale * right.delta_ticks;
-        res.rate_right = right.scale * right.rate;
-        res.duty_right = right.scale * right.duty_cycle;
-        res.battery_voltage = rc_adc_batt();
-        res.jack_voltage = rc_adc_dc_jack();
-        res.left_front_detector = get_gpio_value(left_front);
-        res.right_front_detector = get_gpio_value(right_front);
-        res.left_rear_detector = get_gpio_value(left_rear);
-        res.right_rear_detector = get_gpio_value(right_rear);
-
         rc_motor_set(left.motor, left.duty_cycle);
         rc_motor_set(right.motor, right.duty_cycle);
 
-        last_time = now;
+        json response;
+        response["dt"] = dt;
+        response["delta_left"] = left.scale * left.delta_ticks;
+        response["rate_left"] = left.scale * left.rate;
+        response["duty_left"] = left.scale * left.duty_cycle;
+        response["delta_right"] = right.scale * right.delta_ticks;
+        response["rate_right"] = right.scale * right.rate;
+        response["duty_right"] = right.scale * right.duty_cycle;
+        response["battery_voltage"] = rc_adc_batt();
+        response["jack_voltage"] = rc_adc_dc_jack();
+        response["left_front_detector"] = get_gpio_value(left_front);
+        response["right_front_detector"] = get_gpio_value(right_front);
+        response["left_rear_detector"] = get_gpio_value(left_rear);
+        response["right_rear_detector"] = get_gpio_value(right_rear);
 
-        zframe_t *frame = zframe_new(&res, sizeof(res));
-        zmsg_t *pub_msg = zmsg_new();
-        zmsg_prepend(pub_msg, &frame);
-        zmsg_send(&pub_msg, status_sock);
+        std::string status = response.dump();
+        zstr_send(status_sock, status.c_str());
+
+        last_time = now;
     }
 
     rc_adc_cleanup();
