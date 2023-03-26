@@ -186,8 +186,12 @@ int main(int argc, char **argv) {
     min_duty_cycle = get_double_config(root, "/parameters/min_duty_cycle");
     max_acceleration = get_double_config(root, "/parameters/max_acceleration");
     int loop_sleep = get_int_config(root, "/parameters/update_interval_us");
+    double command_timeout_secs =
+            get_double_config(root, "/parameters/command_timeout_secs");
 
     double last_time = get_time();
+    double last_command = last_time;
+    int command_timeout = 0;
     
     for (;;) {
         usleep(loop_sleep);
@@ -208,9 +212,23 @@ int main(int argc, char **argv) {
                        left.target, right.target);
             }
             zmsg_destroy(&msg);
+            last_command = get_time();
+            command_timeout = 0;
         }
 
         double now = get_time();
+
+        // If it's been too long since we received a command, set desired
+        // rates to zero.
+        if (now - last_command >= command_timeout_secs) {
+            if (!command_timeout) {
+                printf("Command timeout - setting targets to zero\n");
+            }
+            left.target = 0;
+            right.target = 0;
+            command_timeout = 1;
+        }
+
         double dt = now - last_time;
         update_motor(left, dt);
         update_motor(right, dt);
