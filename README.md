@@ -7,7 +7,7 @@ See the LICENSE file in this directory for the license for original code.
 
 ## Third-party code
 
-### include/json/hpp
+### include/json.hpp
 
 The include/json.hpp is used from the project
 https://github.com/nlohmann/json, according to the MIT license contained
