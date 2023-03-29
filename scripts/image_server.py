@@ -44,9 +44,9 @@ parser.add_argument('--device', type=int, default=0,
 parser.add_argument('--quality', type=int, default=95,
                     help='JPEG quality to use (default: 95)')
 parser.add_argument('--crop-left', type=int, default=0,
-                    help='Amount to crop on the left edge (default: 80)')
+                    help='Amount to crop on the left edge (default: 0)')
 parser.add_argument('--crop-right', type=int, default=0,
-                    help='Amount to crop on the right edge (default: 80)')
+                    help='Amount to crop on the right edge (default: 0)')
 parser.add_argument('--scale', type=float, help='Scale factor for result image')
 
 args = parser.parse_args()
