@@ -14,8 +14,7 @@ int main(int argc, char **argv) {
     printf("y=%s\n", ((std::string) obj["y"]).c_str());
     printf("x is null: %d, unknown is null: %d\n",
        obj["x"].is_null(), obj["unknown"].is_null());
-    std::string name = "servo";
-    name += 1;
+    std::string name = "servo" + std::to_string(1);
     std::cout << name << " is null: " << obj[name].is_null() << std::endl;
 
     return 0;
