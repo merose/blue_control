@@ -51,6 +51,19 @@ static void __signal_handler(__attribute__ ((unused)) int dummy) {
 }
 
 
+int get_servo_pulse(double relative, int min_pulse, int max_pulse) {
+    if (relative < -1) {
+        relative = -1;
+    } else if (relative > 1) {
+        relative = 1;
+    }
+
+    int midpoint = (max_pulse + min_pulse)/2;
+    int half_range = (max_pulse - min_pulse)/2;
+    return (int) (midpoint + half_range*relative);
+}
+
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         std::cout << "usage: servo_server config-file" << std::endl;
@@ -101,7 +114,8 @@ int main(int argc, char **argv) {
                     servo_enabled[i] = 0;
                 } else {
                     servo_enabled[i] = 1;
-                    servo_pulse[i] = (int) obj[name];
+                    servo_pulse[i] = get_servo_pulse((double) obj[name],
+                                                     min_pulse, max_pulse);
                 }
             }
             zstr_free(&msg);
