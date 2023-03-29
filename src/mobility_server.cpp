@@ -238,9 +238,11 @@ int main(int argc, char **argv) {
 
         json response;
         response["dt"] = dt;
+        response["left"] = left.scale * left.ticks;
         response["delta_left"] = left.scale * left.delta_ticks;
         response["rate_left"] = left.scale * left.rate;
         response["duty_left"] = left.scale * left.duty_cycle;
+        response["right"] = right.scale * right.ticks;
         response["delta_right"] = right.scale * right.delta_ticks;
         response["rate_right"] = right.scale * right.rate;
         response["duty_right"] = right.scale * right.duty_cycle;
