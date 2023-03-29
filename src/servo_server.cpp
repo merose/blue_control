@@ -1,7 +1,7 @@
 // Tests PID control of motors
 
+#include <iostream>
 #include <string>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -27,7 +27,7 @@ double get_time() {
 double get_double_config(zconfig_t *root, const char *path) {
     const char *value = zconfig_get(root, path, NULL);
     if (value == NULL) {
-        fprintf(stderr, "No configuration value for %s", path);
+        std::cerr << "No configuration value for " << path << std::endl;
         exit(1);
     }
 
@@ -38,7 +38,7 @@ double get_double_config(zconfig_t *root, const char *path) {
 double get_int_config(zconfig_t *root, const char *path) {
     const char *value = zconfig_get(root, path, NULL);
     if (value == NULL) {
-        fprintf(stderr, "No configuration value for %s", path);
+        std::cerr << "No configuration value for " << path << std::endl;
         exit(1);
     }
 
@@ -53,7 +53,7 @@ static void __signal_handler(__attribute__ ((unused)) int dummy) {
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        printf("usage: servo_server config-file\n");
+        std::cout << "usage: servo_server config-file" << std::endl;
         return 1;
     }
 
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
     zconfig_t *root = zconfig_load(argv[1]);
     if (root == NULL) {
-        fprintf(stderr, "Cannot load configuration file %s\n", argv[1]);
+        std::cerr << "Cannot load configuration file " << argv[1] << std::endl;
         return 1;
     }
 
@@ -69,12 +69,11 @@ int main(int argc, char **argv) {
     int min_pulse = get_int_config(root, "/servos/min_pulse");
     int max_pulse = get_int_config(root, "/servos/max_pulse");
 
-    char cmd_endpoint[] = "tcp://*:99999";
-    sprintf(cmd_endpoint, "tcp://*:%d", cmd_port);
+    std::string cmd_endpoint = "tcp://*:" + std::to_string(cmd_port);
     zsock_t *cmd_sock = zsock_new(ZMQ_SUB);
-    zsock_bind(cmd_sock, cmd_endpoint);
+    zsock_bind(cmd_sock, cmd_endpoint.c_str());
     zsock_set_subscribe(cmd_sock, "");
-    printf("Bound command socket to %s\n", cmd_endpoint);
+    std::cout << "Bound command socket to " << cmd_endpoint << std::endl;
 
     int loop_sleep = get_int_config(root, "/servos/update_interval_us");
     double command_timeout_secs =
@@ -94,11 +93,11 @@ int main(int argc, char **argv) {
     for (;;) {
         char *msg = zstr_recv_nowait(cmd_sock);
         if (msg != NULL) {
+            std::cout << "Received command: " << msg << std::endl;
             json obj = json::parse(msg);
             for (int i=0; i < SERVO_COUNT; ++i) {
-                char name[] = "servoN";
-                sprintf(name, "servo%d", i+1);
-                if (!obj[name].is_null()) {
+                std::string name = "servo" + std::to_string(i+1);
+                if (obj[name].is_null()) {
                     servo_enabled[i] = 0;
                 } else {
                     servo_enabled[i] = 1;
@@ -116,7 +115,8 @@ int main(int argc, char **argv) {
         // rates to zero.
         if (now - last_command >= command_timeout_secs) {
             if (!command_timeout) {
-                printf("Command timeout - setting targets to zero\n");
+                std::cout << "Command timeout - setting targets to zero"
+                        << std::endl;
             }
             for (int i=0; i < SERVO_COUNT; ++i) {
                 servo_enabled[i] = 0;
