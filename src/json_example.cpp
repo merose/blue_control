@@ -12,8 +12,8 @@ int main(void) {
 
     json obj2 = {
         {"a", 3.14},
-	{"b", "hello"},
-	{"c", 123}
+        {"b", "hello"},
+        {"c", 123}
     };
     std::cout << "obj2=" << obj2.dump() << std::endl;
     std::cout << "obj2[a]=" << obj2["a"] << std::endl;

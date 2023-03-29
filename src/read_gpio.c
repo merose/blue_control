@@ -8,7 +8,7 @@
 int main(int argc, char **argv) {
     if (argc != 3) {
         printf("usage: read_gpio <chipno> <pinno>\n");
-	return 1;
+        return 1;
     }
 
     int chip_no = atoi(argv[1]);

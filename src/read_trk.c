@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
         int right_front = rc_gpio_get_value(1, 17);
         int left_rear = rc_gpio_get_value(3, 20);
         int right_rear = rc_gpio_get_value(3, 17);
-	printf("LF=%d RF=%d LR=%d RR=%d\n",
+        printf("LF=%d RF=%d LR=%d RR=%d\n",
                left_front, right_front, left_rear, right_rear);
         rc_usleep(50000);
     }
