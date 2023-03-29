@@ -1,5 +1,5 @@
 LDFLAGS=-lrobotcontrol -lczmq
-CFLAGS=-Iinclude
+CFLAGS=-Iinclude -Wno-psabi
 
 PGMS = \
 	bin/json_example \
@@ -7,11 +7,13 @@ PGMS = \
 	bin/read_trk \
 	bin/read_gpio \
 	bin/json_example \
-        bin/json_echo \
-        bin/echo_server \
+	bin/json_test \
+	bin/json_echo \
+	bin/echo_server \
 	bin/get_system_params \
 	bin/test_pid \
 	bin/mobility_server \
+	bin/servo_server \
 	bin/test_config
 
 bin/%: src/%.c
