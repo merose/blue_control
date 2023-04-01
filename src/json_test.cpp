@@ -16,6 +16,6 @@ int main(int argc, char **argv) {
        obj["x"].is_null(), obj["unknown"].is_null());
     std::string name = "servo" + std::to_string(1);
     std::cout << name << " is null: " << obj[name].is_null() << std::endl;
-
+    std::cout << "obj['x']=" << (int) obj[std::string("x")] << std::endl;
     return 0;
 }
