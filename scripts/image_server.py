@@ -41,13 +41,15 @@ parser.add_argument('--port', type=int, default=10002,
                     help='Publisher port (default: 10002)')
 parser.add_argument('--device', type=int, default=0,
                     help='The video device to use (default: 0)')
-parser.add_argument('--quality', type=int, default=95,
-                    help='JPEG quality to use (default: 95)')
+parser.add_argument('--quality', type=int, default=70,
+                    help='JPEG quality to use (default: 70)')
 parser.add_argument('--crop-left', type=int, default=0,
                     help='Amount to crop on the left edge (default: 0)')
 parser.add_argument('--crop-right', type=int, default=0,
                     help='Amount to crop on the right edge (default: 0)')
 parser.add_argument('--scale', type=float, help='Scale factor for result image')
+parser.add_argument('--min-interval', type=float, default=0.5,
+                    help='Minimum time between sent images (default: 0.5)')
 
 args = parser.parse_args()
 
@@ -62,15 +64,13 @@ else:
     Thread(target=capture.run).start()
 
 context = zmq.Context()
-sock = context.socket(zmq.REP)
+sock = context.socket(zmq.PUB)
 sock.bind(f'tcp://*:{args.port}')
 print(f'Ready to serve images')
 
 count = 0
+last_image_time = 0
 while True:
-    msg = sock.recv_json()
-    print(f'Received image request - quality={msg["quality"]}')
-    quality = msg['quality'] if 'quality' in msg else args.quality
     if args.no_capture:
         frame = np.zeros((args.height, args.width, 3), np.uint8)
         x, y = 100, args.height-100
@@ -78,7 +78,12 @@ while True:
                    5, (255, 255, 255), 3)
     else:
         frame = capture.get_frame()
+
+    # Omit this frame if not long enough between frames.
     now = time.time()
+    if now - last_image_time < args.min_interval:
+        continue
+
     if args.crop_right > 0:
         frame = frame[:, args.crop_left:-args.crop_right, :]
     else:
@@ -87,14 +92,15 @@ while True:
         frame = cv.resize(frame, None, fx=args.scale, fy=args.scale)
 
     ret, compressed = cv.imencode('.jpg', frame,
-                                  [cv.IMWRITE_JPEG_QUALITY, quality])
+                                  [cv.IMWRITE_JPEG_QUALITY, args.quality])
 
     msg = {
         'time': now,
         'shape': frame.shape,
-        'quality': quality,
+        'quality': args.quality,
         'data': compressed.tobytes()
     }
     sock.send_pyobj(msg)
     count += 1
-    print(f'Sent {count} images')
+    last_image_time = now
+    print(f'Sending image {count} at time {now}')
