@@ -1,0 +1,5 @@
+#! /bin/bash
+
+sudo bin/mobility_server config/default.cfg 2>&1 >mobility.out &
+sudo bin/servo_server config/default.cfg 2>&1 >servo.out &
+python3 scripts/image_server.py 2>&1 >images.out &

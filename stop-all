@@ -1,0 +1,5 @@
+#! /bin/bash
+
+sudo pkill -KILL -f mobility_server
+sudo pkill -KILL -f servo_server
+pkill -TERM -f image_server
