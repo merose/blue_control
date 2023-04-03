@@ -52,15 +52,14 @@ static void __signal_handler(__attribute__ ((unused)) int dummy) {
 
 
 int get_servo_pulse(double relative, int min_pulse, int max_pulse) {
-    if (relative < -1) {
-        relative = -1;
+    if (relative < 0) {
+        relative = 0;
     } else if (relative > 1) {
         relative = 1;
     }
 
-    int midpoint = (max_pulse + min_pulse)/2;
-    int half_range = (max_pulse - min_pulse)/2;
-    return (int) (midpoint + half_range*relative);
+    int range = max_pulse - min_pulse;
+    return (int) (min_pulse + relative*range);
 }
 
 
