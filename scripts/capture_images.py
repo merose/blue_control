@@ -1,12 +1,54 @@
-import pickle
+import sys
 import time
 from argparse import ArgumentParser
+from threading import Event, Thread
 
 import cv2 as cv
 
 import numpy as np
 
 import zmq
+
+
+class ImageCapturer:
+
+    def __init__(self, sock, prefix, index):
+        self.sock = sock
+        self.prefix = prefix
+        self.index = index
+        self.frame = None
+        self.frame_ready = Event()
+
+        Thread(target=self.recv_images).start()
+
+    def recv_images(self):
+        while True:
+            msg = sock.recv_pyobj()
+            t = msg['time']
+            shape = msg['shape']
+            buf = msg['data']
+            raw = np.frombuffer(buf, dtype=np.uint8)
+            self.frame = cv.imdecode(raw, cv.IMREAD_UNCHANGED)
+            self.frame_ready.set()
+
+    def run(self):
+        while True:
+            self.frame_ready.clear()
+            self.frame_ready.wait()
+            self.show_image(self.frame)
+
+    def show_image(self, frame):
+        h, w = frame.shape[:2]
+        cv.line(frame, (w//2, 0), (w//2, h), (0,0,255), 1)
+        cv.line(frame, (0, h//2), (w, h//2), (0,0,255), 1)
+        cv.imshow('image', frame)
+        key = cv.waitKey(0)
+        if key == 27:
+            sys.exit(1)
+        if key == 's'.encode()[0]:
+            path = f'{self.prefix}{self.index:03d}.png'
+            cv.imwrite(path, frame)
+            self.index += 1
 
 
 parser = ArgumentParser('Capture images from 0mq publisher')
@@ -26,24 +68,9 @@ parser.add_argument('prefix',
 args = parser.parse_args()
 
 context = zmq.Context()
-sock = context.socket(zmq.REQ)
+sock = context.socket(zmq.SUB)
+sock.set_string(zmq.SUBSCRIBE, '')
 sock.connect(f'tcp://{args.host}:{args.port}')
 
-index = args.start_index
-while True:
-    sock.send_json({'quality': args.quality})
-    msg = sock.recv_pyobj()
-    t = msg['time']
-    shape = msg['shape']
-    buf = msg['data']
-    raw = np.frombuffer(buf, dtype=np.uint8)
-    frame = cv.imdecode(raw, cv.IMREAD_UNCHANGED)
+ImageCapturer(sock, args.prefix, args.start_index).run()
 
-    cv.imshow('image', frame)
-    key = cv.waitKey(0)
-    if key == 27:
-        break;
-    if key == 's'.encode()[0]:
-        path = f'{args.prefix}{index:03d}.png'
-        cv.imwrite(path, frame)
-        index += 1
