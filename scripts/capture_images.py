@@ -39,9 +39,10 @@ class ImageCapturer:
 
     def show_image(self, frame):
         h, w = frame.shape[:2]
-        cv.line(frame, (w//2, 0), (w//2, h), (0,0,255), 1)
-        cv.line(frame, (0, h//2), (w, h//2), (0,0,255), 1)
-        cv.imshow('image', frame)
+        copy = frame.copy()
+        cv.line(copy, (w//2, 0), (w//2, h), (0,0,255), 1)
+        cv.line(copy, (0, h//2), (w, h//2), (0,0,255), 1)
+        cv.imshow('image', copy)
         key = cv.waitKey(0)
         if key == 27:
             sys.exit(1)
