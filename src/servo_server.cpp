@@ -15,6 +15,14 @@ using json = nlohmann::json;
 
 #define SERVO_COUNT 8
 
+int min_pulse;
+int max_pulse;
+int servo_enabled[SERVO_COUNT] = {0};
+int servo_pulse[SERVO_COUNT];
+double last_command;
+double command_timeout_secs;
+int command_timeout;
+
 
 double get_time() {
     struct timespec ts;
@@ -63,6 +71,54 @@ int get_servo_pulse(double relative, int min_pulse, int max_pulse) {
 }
 
 
+int send_servo_pulses(zloop_t *loop, int timer_id, void *arg) {
+    double now = get_time();
+
+    // If it's been too long since we received a command, set desired
+    // rates to zero.
+    if (now - last_command >= command_timeout_secs) {
+        if (!command_timeout) {
+            std::cout << "Command timeout - setting targets to zero"
+                    << std::endl;
+        }
+        for (int i=0; i < SERVO_COUNT; ++i) {
+            servo_enabled[i] = 0;
+        }
+        command_timeout = 1;
+    }
+
+    for (int i=0; i < SERVO_COUNT; ++i) {
+        if (servo_enabled[i]) {
+            rc_servo_send_pulse_us(i+1, servo_pulse[i]);
+        }
+    }
+
+    return 0;
+}
+
+
+int process_servo_commands(zloop_t *loop, zsock_t *reader, void *arg) {
+    char *msg = zstr_recv(reader);
+    std::cout << "Received command: " << msg << std::endl;
+    json obj = json::parse(msg);
+    for (int i=0; i < SERVO_COUNT; ++i) {
+        std::string name = "servo" + std::to_string(i+1);
+        if (obj[name].is_null()) {
+            servo_enabled[i] = 0;
+        } else {
+            servo_enabled[i] = 1;
+            servo_pulse[i] = get_servo_pulse((double) obj[name],
+                                             min_pulse, max_pulse);
+        }
+    }
+    zstr_free(&msg);
+    last_command = get_time();
+    command_timeout = 0;
+
+    return 0;
+}
+
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         std::cout << "usage: servo_server config-file" << std::endl;
@@ -85,68 +141,25 @@ int main(int argc, char **argv) {
     zsock_set_subscribe(cmd_sock, "");
     std::cout << "Bound command socket to " << cmd_endpoint << std::endl;
 
-    int min_pulse = get_int_config(root, "/servos/min_pulse");
-    int max_pulse = get_int_config(root, "/servos/max_pulse");
+    min_pulse = get_int_config(root, "/servos/min_pulse");
+    max_pulse = get_int_config(root, "/servos/max_pulse");
     std::cout << "Pulse range: " << min_pulse << ".." << max_pulse << std::endl;
 
-    int loop_sleep = get_int_config(root, "/servos/update_interval_us");
-    double command_timeout_secs =
-            get_double_config(root, "/servos/command_timeout_secs");
+    int loop_sleep = get_int_config(root, "/servos/update_interval_ms");
+    command_timeout_secs =
+        get_double_config(root, "/servos/command_timeout_secs");
 
-    double last_time = get_time();
-    double last_command = last_time;
-    int command_timeout = 0;
+    last_command = get_time();
+    command_timeout = 0;
 
-    int servo_enabled[SERVO_COUNT] = {0};
-    int servo_pulse[SERVO_COUNT];
-    
     rc_servo_init();
     rc_usleep(500000);
     rc_servo_power_rail_en(1);
 
-    for (;;) {
-        char *msg = zstr_recv_nowait(cmd_sock);
-        if (msg != NULL) {
-            std::cout << "Received command: " << msg << std::endl;
-            json obj = json::parse(msg);
-            for (int i=0; i < SERVO_COUNT; ++i) {
-                std::string name = "servo" + std::to_string(i+1);
-                if (obj[name].is_null()) {
-                    servo_enabled[i] = 0;
-                } else {
-                    servo_enabled[i] = 1;
-                    servo_pulse[i] = get_servo_pulse((double) obj[name],
-                                                     min_pulse, max_pulse);
-                }
-            }
-            zstr_free(&msg);
-            last_command = get_time();
-            command_timeout = 0;
-        }
-
-        double now = get_time();
-
-        // If it's been too long since we received a command, set desired
-        // rates to zero.
-        if (now - last_command >= command_timeout_secs) {
-            if (!command_timeout) {
-                std::cout << "Command timeout - setting targets to zero"
-                        << std::endl;
-            }
-            for (int i=0; i < SERVO_COUNT; ++i) {
-                servo_enabled[i] = 0;
-            }
-            command_timeout = 1;
-        }
-
-        for (int i=0; i < SERVO_COUNT; ++i) {
-            if (servo_enabled[i]) {
-                rc_servo_send_pulse_us(i+1, servo_pulse[i]);
-            }
-        }
-
-        last_time = now;
-    }
+    zloop_t *loop = zloop_new();
+    zloop_reader(loop, cmd_sock, process_servo_commands, NULL);
+    zloop_timer(loop, loop_sleep, 0, send_servo_pulses, NULL);
+    zloop_start(loop);
 
     return 0;
 }
