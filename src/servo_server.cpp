@@ -78,14 +78,16 @@ int main(int argc, char **argv) {
     }
 
     int cmd_port = get_int_config(root, "/servos/cmd_port");
-    int min_pulse = get_int_config(root, "/servos/min_pulse");
-    int max_pulse = get_int_config(root, "/servos/max_pulse");
 
     std::string cmd_endpoint = "tcp://*:" + std::to_string(cmd_port);
     zsock_t *cmd_sock = zsock_new(ZMQ_SUB);
     zsock_bind(cmd_sock, cmd_endpoint.c_str());
     zsock_set_subscribe(cmd_sock, "");
     std::cout << "Bound command socket to " << cmd_endpoint << std::endl;
+
+    int min_pulse = get_int_config(root, "/servos/min_pulse");
+    int max_pulse = get_int_config(root, "/servos/max_pulse");
+    std::cout << "Pulse range: " << min_pulse << ".." << max_pulse << std::endl;
 
     int loop_sleep = get_int_config(root, "/servos/update_interval_us");
     double command_timeout_secs =
