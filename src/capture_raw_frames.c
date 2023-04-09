@@ -15,6 +15,8 @@
 
 #include <getopt.h>             /* getopt_long() */
 
+#include <time.h>
+
 #include <fcntl.h>              /* low-level i/o */
 #include <unistd.h>
 #include <errno.h>
@@ -53,6 +55,16 @@ static int              width = 640;
 static int              height = 480;
 static int              frame_count = 200;
 static int              frame_number = 0;
+static double           min_interval = -1;
+static double           last_frame_time = 0;
+
+
+double get_time() {
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec + ts.tv_nsec/1E9;
+}
 
 
 static void errno_exit(const char *s) {
@@ -73,6 +85,14 @@ static int xioctl(int fh, int request, void *arg) {
 
 
 static void process_image(const void *p, int size) {
+    double now = get_time();
+    if (min_interval > 0 && now-last_frame_time < min_interval) {
+        printf("Skipping frame: now=%.3f last=%.3f\n",
+               now, last_frame_time);
+        return;
+    }
+    last_frame_time = now;
+
     frame_number++;
     char filename[15];
     sprintf(filename, "frame-%d.jpg", frame_number);
@@ -181,9 +201,9 @@ static int read_frame(void) {
 
 static void mainloop(void) {
     unsigned int count;
-
     count = frame_count;
 
+    last_frame_time = 0.0;
     while (count-- > 0) {
         for (;;) {
             fd_set fds;
@@ -573,12 +593,13 @@ static void usage(FILE *fp, int argc, char **argv) {
             "-w | --width         Set frame width\n"
             "-H | --height        Set frame height\n"
             "-c | --count         Number of frames to grab [%i]\n"
+            "-f | --fps           Set max frame rate\n"
             "",
             argv[0], dev_name, frame_count);
 }
 
 
-static const char short_options[] = "d:hmruow:H:c:";
+static const char short_options[] = "d:hmruow:H:c:f:";
 
 
 static const struct option long_options[] = {
@@ -591,6 +612,7 @@ static const struct option long_options[] = {
     { "width",  required_argument, NULL, 'w' },
     { "height", required_argument, NULL, 'H' },
     { "count",  required_argument, NULL, 'c' },
+    { "fps",    required_argument, NULL, 'f' },
     { 0, 0, 0, 0 }
 };
 
@@ -649,6 +671,13 @@ int main(int argc, char **argv) {
             frame_count = strtol(optarg, NULL, 0);
             if (errno)
                 errno_exit(optarg);
+            break;
+
+        case 'f':
+            double fps = atof(optarg);
+            min_interval = 1.0 / fps;
+            printf("Minimum frame interval %.3f sec = %.1f fps\n",
+                   min_interval, fps);
             break;
 
         default:
