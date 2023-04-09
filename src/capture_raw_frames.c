@@ -505,8 +505,8 @@ static void init_device(void)
 
                 /* Note VIDIOC_S_FMT may change width and height. */
         } else if (mjpeg_format) {
-                fmt.fmt.pix.width       = 1280; //replace
-                fmt.fmt.pix.height      = 720; //replace
+                fmt.fmt.pix.width       = 640; //replace
+                fmt.fmt.pix.height      = 360; //replace
                 fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG; //replace
                 fmt.fmt.pix.field       = V4L2_FIELD_ANY;
 

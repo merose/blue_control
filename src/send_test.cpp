@@ -21,7 +21,8 @@ double get_time() {
  * Show program usage.
  */
 void show_usage() {
-    std::cerr << "usage: send_test -c count -s size [-p port]" << std::endl;
+    std::cerr << "usage: send_test -c count -s size [-p port] [-w wait_us]"
+              << std::endl;
 }
 
 
@@ -33,8 +34,9 @@ int main(int argc, char **argv) {
     int size = -1;
     int count = -1;
     int port = 10000;
+    int wait_us = 0;
 
-    while ((opt = getopt(argc, argv, "s:c:p:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:c:p:w:")) != -1) {
         switch (opt) {
         case 's':
             size = atoi(optarg);
@@ -44,6 +46,9 @@ int main(int argc, char **argv) {
             break;
         case 'p':
             port = atoi(optarg);
+            break;
+        case 'w':
+            wait_us = atoi(optarg);
             break;
         default:
             show_usage();
@@ -79,6 +84,9 @@ int main(int argc, char **argv) {
             buf[0] = 1;
         }
         zsock_send(sock, "b", buf, (size_t) size);
+        if (wait_us > 0) {
+            usleep(wait_us);
+        }
     }
     double stop = get_time();
     double elapsed = stop - start;
