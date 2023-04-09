@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     std::string url = std::string("tcp://") + host + ":" + std::to_string(port);
     zsock_t *sock = zsock_new_sub(url.c_str(), "");
     
-    std::cout << "Listening on " << url << std::endl;
+    std::cout << "Connecting to " << url << std::endl;
     
     byte *buf;
     size_t size;
