@@ -70,7 +70,9 @@ int main(int argc, char **argv) {
     std::string url = std::string("tcp://*:") + std::to_string(port);
     zsock_t *sock = zsock_new_pub(url.c_str());
     std::cout << "Press ENTER to start..." << std::endl;
-    getchar();
+    while (getchar() != '\n') {
+        // do nothing
+    }
     std::cout << "Sending on " << url << std::endl;
     
     byte buf[size] = {0};
@@ -93,7 +95,10 @@ int main(int argc, char **argv) {
 
     std::cout << "Sent " << count << " msgs in " << elapsed << " sec"
               << " == " << (count/elapsed) << " msgs/sec" << std::endl;
-    sleep(10);
+    std::cout << "Press ENTER to exit..." << std::endl;
+    while (getchar() != '\n') {
+        // do nothing
+    }
 
     zsock_destroy(&sock);
     return 0;
