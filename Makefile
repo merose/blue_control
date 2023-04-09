@@ -14,7 +14,10 @@ PGMS = \
 	bin/test_pid \
 	bin/mobility_server \
 	bin/servo_server \
-	bin/test_config
+	bin/test_config \
+	bin/capture_raw_frames \
+	bin/send_test \
+	bin/recv_test
 
 bin/%: src/%.c
 	cc ${CFLAGS} -o $@ $< ${LDFLAGS} 
