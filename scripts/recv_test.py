@@ -27,6 +27,7 @@ while True:
         start = now
     stop = now
     count += 1
+    #print(f'Message {count} chunk lengths: {[len(b) for b in msg]}')
     buf = msg[0]
     if buf[0] != 0:
         break
