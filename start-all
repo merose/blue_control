@@ -1,5 +1,5 @@
 #! /bin/bash
 
-sudo bin/mobility_server config/default.cfg 2>&1 >mobility.out &
-sudo bin/servo_server config/default.cfg 2>&1 >servo.out &
-python3 scripts/image_server.py 2>&1 >images.out &
+bin/mobility_server config/default.cfg >mobility.out 2>&1 &
+bin/servo_server config/default.cfg >servo.out 2>&1 &
+bin/image_server -m -w 1280 -H 720 --fps 8 >image.out 2>&1 &
