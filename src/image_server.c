@@ -598,6 +598,7 @@ static const struct option long_options[] = {
 
 
 int main(int argc, char **argv) {
+    double fps;
     dev_name = "/dev/video0";
 
     for (;;) {
@@ -643,7 +644,7 @@ int main(int argc, char **argv) {
             break;
 
         case 'f':
-            double fps = atof(optarg);
+            fps = atof(optarg);
             min_interval = 1.0 / fps;
             printf("Minimum frame interval %.3f sec = %.1f fps\n",
                    min_interval, fps);
