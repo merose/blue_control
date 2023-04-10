@@ -17,7 +17,8 @@ PGMS = \
 	bin/test_config \
 	bin/capture_raw_frames \
 	bin/send_test \
-	bin/recv_test
+	bin/recv_test \
+	bin/image_server
 
 bin/%: src/%.c
 	cc ${CFLAGS} -o $@ $< ${LDFLAGS} 
