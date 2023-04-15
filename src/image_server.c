@@ -1,4 +1,5 @@
 /**
+    iouble now = get_time();
  * Send captured images over 0MQ publish socket to recipients.
  *
  * This program uses the V4L2 API see http://linuxtv.org/docs.php
@@ -83,8 +84,7 @@ static int xioctl(int fh, int request, void *arg) {
 }
 
 
-static void process_image(const void *p, int size) {
-    double now = get_time();
+static void process_image(const void *p, int size, double now) {
     if (min_interval < 0 || now-last_frame_time >= min_interval) {
         zsock_send(sock, "b", p, (size_t) size);
         last_frame_time = now;
@@ -92,7 +92,7 @@ static void process_image(const void *p, int size) {
 }
 
 
-static int read_frame(void) {
+static int read_frame(double now) {
     struct v4l2_buffer buf;
     unsigned int i;
 
@@ -113,7 +113,7 @@ static int read_frame(void) {
             }
         }
 
-        process_image(buffers[0].start, buffers[0].length);
+        process_image(buffers[0].start, buffers[0].length, now);
         break;
 
     case IO_METHOD_MMAP:
@@ -139,7 +139,7 @@ static int read_frame(void) {
 
         assert(buf.index < n_buffers);
 
-        process_image(buffers[buf.index].start, buf.bytesused);
+        process_image(buffers[buf.index].start, buf.bytesused, now);
 
         if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
             errno_exit("VIDIOC_QBUF");
@@ -173,7 +173,7 @@ static int read_frame(void) {
 
         assert(i < n_buffers);
 
-        process_image((void *)buf.m.userptr, buf.bytesused);
+        process_image((void *)buf.m.userptr, buf.bytesused, now);
 
         if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))
             errno_exit("VIDIOC_QBUF");
@@ -212,7 +212,7 @@ static void mainloop(void) {
                 exit(EXIT_FAILURE);
             }
 
-            if (read_frame())
+            if (read_frame(get_time()))
                 break;
             /* EAGAIN - continue select loop. */
         }
